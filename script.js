@@ -36,18 +36,16 @@ const alphabetColors = [
     '#4ade80', '#34d399', '#2dd4bf', '#38bdf8', '#60a5fa'
 ];
 
-// --- Tablet & Mobile High Quality Sweet Voice Synthesis Engine ---
+// --- High Quality Speech Synth Controller ---
 function speakText(text) {
     if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Clears any stacked up audio instantly
+        window.speechSynthesis.cancel(); 
         const utterance = new SpeechSynthesisUtterance(text);
         
-        // Modulates reading variables to a friendly child-friendly pattern
         utterance.rate = 0.85;  
         utterance.pitch = 1.30; 
         utterance.volume = 1.0; 
 
-        // Automatically searches system for the sweetest natural accents available
         const voices = window.speechSynthesis.getVoices();
         const sweetVoice = voices.find(voice => 
             voice.name.includes('Natural') || 
@@ -63,7 +61,6 @@ function speakText(text) {
     }
 }
 
-// Bypasses mobile background safety wrappers during initial click events
 function forceUnlockMobileAudio() {
     if (!isVoiceEngineUnlocked) {
         const silentSpeech = new SpeechSynthesisUtterance('');
@@ -94,12 +91,13 @@ function loadGamePage() {
     const targetLetter = alphabetList[currentTargetIndex];
     if (gameQuestion) gameQuestion.textContent = "Where is the alphabet " + targetLetter + "?";
     
-    // Reads out the question instantly using the sweet speech synthesis setup
-    speakText("Where is the alphabet " + targetLetter + "?");
+    // Only speaks if the audio context has already been activated via interaction
+    if (isVoiceEngineUnlocked) {
+        speakText("Where is the alphabet " + targetLetter + "?");
+    }
 
     if (gridScreen) gridScreen.innerHTML = '';
 
-    // Shuffle layout array options
     let currentChoices = [...alphabetList];
     currentChoices.sort(function() { return 0.5 - Math.random(); });
 
@@ -110,7 +108,7 @@ function loadGamePage() {
         button.style.backgroundColor = alphabetColors[index % alphabetColors.length];
 
         button.addEventListener('click', function() {
-            forceUnlockMobileAudio(); // Ensures audio token context stays alive on mobile APK
+            forceUnlockMobileAudio(); 
 
             if (letter === targetLetter) {
                 selectLetterCard(letter);
@@ -135,15 +133,13 @@ function selectLetterCard(letter) {
     if (emojiDisplay) emojiDisplay.textContent = data.emoji;
     if (wordText) wordText.textContent = data.word;
 
-    // Sweet child narration response sequence
     speakText("Correct! " + letter + " is for " + data.word);
 }
 
-// --- Application Flow Initialization Routing ---
-
+// --- Interaction Element Triggers ---
 if (startBtn) {
     startBtn.addEventListener('click', function() {
-        forceUnlockMobileAudio();
+        forceUnlockMobileAudio(); // Secure permission loop instantly
         currentTargetIndex = 0; 
         initializeAlphabet(); 
         if (welcomeScreen) welcomeScreen.classList.add('hidden');
@@ -152,6 +148,9 @@ if (startBtn) {
         if (gridScreen) gridScreen.classList.remove('hidden');
         
         loadGamePage();
+        // Read clearly now that user action context is validated
+        const targetLetter = alphabetList[currentTargetIndex];
+        speakText("Where is the alphabet " + targetLetter + "?");
     });
 }
 
@@ -165,14 +164,4 @@ if (backBtn) {
         
         loadGamePage();
     });
-}
-
-// Ensure voice components bind smoothly if system handles background asset loading asynchronously
-if ('speechSynthesis' in window && window.speechSynthesis.onvoiceschanged !== undefined) {
-    window.speechSynthesis.onvoiceschanged = function() {
-        if (welcomeScreen && welcomeScreen.classList.contains('hidden') && cardScreen && cardScreen.classList.contains('hidden')) {
-            const targetLetter = alphabetList[currentTargetIndex];
-            if(targetLetter) speakText("Where is the alphabet " + targetLetter + "?");
-        }
-    };
 }
